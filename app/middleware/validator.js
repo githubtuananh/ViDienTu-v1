@@ -13,4 +13,10 @@ const chemaLogin = joi.object({
     password: joi.string().required(),
 })
 
-module.exports = {schemaRegister, chemaLogin};
+const chemaChangePassword = joi.object({
+    oldPassword: joi.string().required().label('Vui lòng điền mật khẩu cũ'),
+    newPassword: joi.string().required().label('Vui lòng điền mật khẩu mới'),
+    confirmPassword: joi.string().valid(joi.ref('newPassword')).label('Nhập lại mật khẩu không chính xác'),
+})
+
+module.exports = {schemaRegister, chemaLogin, chemaChangePassword};

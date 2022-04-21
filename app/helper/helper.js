@@ -25,7 +25,6 @@ exports.generateRandomNumber = (n) => {
     return randomString;
 }
 
-
 exports.sendEmail = async(email, username, password) => {
     let transporter = nodemailer.createTransport({
         host: "smtp.gmail.com",
@@ -70,7 +69,6 @@ exports.sendEmail = async(email, username, password) => {
     //     }
     //   });
 }
-
 
 exports.login_attempts = async(req, user) => {
     if(req.session["login_attempts"] == undefined){

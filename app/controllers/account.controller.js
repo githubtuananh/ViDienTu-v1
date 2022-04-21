@@ -18,6 +18,8 @@ const middleware = require("../middleware/validator");
 //Require helper
 const helper = require("../helper/helper");
 
+//Require service
+const userService = require("../service/user.service");
 
 // ----------------------------------------------------------------------------
 //Register
@@ -123,26 +125,26 @@ exports.login = async (req, res) => {
         }
         const {username, password} = fields;
 
-
-
+        //Locked account 1m
         if(req.session.locked != undefined){
             if(Date.now() - req.session.locked < 60*1000){
-                return res.status(400).json({code: 400, message: "Tài khoản hiện đang bị tạm khóa, vui lòng thử lại sau 1 phút’"});
+                return res.status(400).json({code: 400, message: "Tài khoản hiện đang bị tạm khóa, vui lòng thử lại sau 1 phút"});
             }
         }
-
+        //Disable account
         const userBlackList = await blacklistUserModel.findOne({username});
         if(userBlackList){
             return res.status(400).json({code: 400, message: "Tài khoản đã bị khóa do nhập sai mật khẩu nhiều lần, vui lòng liên hệ quản trị viên để được hỗ trợ"});
         }
+
         //Check User And Password
         try{
             const user = await userModel.findOne({username});
             if(user){ //Check User Exists
                 //Check Password
                 const passwordCorrect = user.password;
-                const result = bcrypt.compareSync(password, passwordCorrect);
-                if(!result){
+                const isPassword = bcrypt.compareSync(password, passwordCorrect);
+                if(!isPassword){
                     // Prevent user from login
                     const login_attempt = await helper.login_attempts(req, user);
                     if(login_attempt){
@@ -186,7 +188,7 @@ exports.login = async (req, res) => {
                 delete req.session.login_attempts;
                 await userModel.findOneAndUpdate({username}, {unusual: 0});
 
-                const token = jwt.sign({name: data.name, email: data.email, username}, process.env.TOKEN_SECERT, {expiresIn: '10s'});
+                const token = jwt.sign({name: data.name, email: data.email, username}, process.env.TOKEN_SECERT, {expiresIn: '10m'});
                 res.cookie('auth-token', token, {httpOnly: true}); 
                 return res.status(200).json({code: 200, firstLogin, message, data, token});
             }else{
@@ -200,7 +202,38 @@ exports.login = async (req, res) => {
 
 //Change Password
 exports.changePassword = async (req, res) => {
+    const form = formidable({ multiples: true });
+    form.parse(req, async (err, fields, files) => {
+        if (err) {
+            return res.status(400).json({code: 400, message: err.message});
+        }
+        //Check Fields
+        try{
+            const result = await middleware.chemaChangePassword.validateAsync(fields);
+        }catch(err){
+            return res.status(400).json({code: 400, message: err});
+        }
 
+        //Change Password
+        const {newPassword, confirmPassword, oldPassword} = fields;
+        const user = await userService.getUserById(req.user.username);
+        if(!user){
+            return res.status(400).json({code: 400, message: "Tài khoản không tồn tại"});
+        }
+        try {
+            const passwordCorrect = user.password;
+            const isPassword = bcrypt.compareSync(oldPassword, passwordCorrect);
+            if(!isPassword){
+                return res.status(400).json({code: 400, message: "Mật khẩu cũ chính xác"});
+            }
+            const passwordHash = bcrypt.hashSync(newPassword, 2);
+            await userModel.findOneAndUpdate({username: req.user.username}, {password: passwordHash});
+
+            return res.status(200).json({code: 200, message: "Đổi mật khẩu thành công"});
+        } catch (error) {
+            return res.status(500).json({code: 500, message: "Đổi mật khẩu thất bại", error: err});
+        }        
+    })
 }
 
 //Logout 
