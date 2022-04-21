@@ -12,6 +12,7 @@ const userSchema = new Schema({
   password: {type:String, required: true},
   status: {type: String, default: "chờ xác minh"},
   firstLogin : {type: Boolean, default: true},
+  unusual : {type: Number, default: 0},
   createdAt: {type: Date, default: Date.now},
 });
 

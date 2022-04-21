@@ -2,6 +2,11 @@ const nodemailer = require("nodemailer");
 const fs = require("fs");
 require("dotenv").config();
 
+// require models
+const userModel = require("../models/user.model");
+const blacklistUserModel = require("../models/blacklist.model");
+
+
 exports.generateRandomLetter = (n) => {
     const listCharacter = "abcdefghijklmnopqrstuvwxyz0123456789`!@#$%^&*?><|"
     let randomString = '';
@@ -67,4 +72,28 @@ exports.sendEmail = async(email, username, password) => {
 }
 
 
+exports.login_attempts = async(req, user) => {
+    if(req.session["login_attempts"] == undefined){
+        req.session["login_attempts"] = 1;
+    }else{
+        req.session["login_attempts"] += 1;
+    }
 
+    if(req.session["login_attempts"] >= 3){
+        req.session["login_attempts"] = 0;
+        await userModel.findOneAndUpdate({username: user.username}, {unusual: user.unusual + 1});
+        return true;
+    }
+    return false;
+}
+
+exports.addBackList = async(user) => {
+    if(user.unusual == 2){
+        const userBL = new blacklistUserModel({
+            username: user.username,
+        })           
+        const saveUser = await userBL.save();
+        return true;
+    }
+    return false;
+}

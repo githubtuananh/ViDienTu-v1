@@ -7,8 +7,7 @@ exports.requireAuth = (req, res, next) => {
     jwt.verify(token, process.env.TOKEN_SECERT, (err, decoded)=>{
         if (err) {
             if(err.name == "TokenExpiredError") return res.status(400).json({code: 400, error: err.message});
-
-            if(err.name == "JsonWebTokenError") return res.status(400).json({code: 400, error: "Invaild Token"});
+            else return res.status(400).json({code: 400, error: "Invaild Token"});
         }
         req.user = decoded;
         next();

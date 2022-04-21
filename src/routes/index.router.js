@@ -16,25 +16,23 @@ router.get("/register", (req, res) => {
 });
 router.post("/register", accountController.register)
 
-
 //Login 
 router.get("/login", (req, res) => {
     res.render("auth/login");
 });
 router.post("/login", accountController.login);
 
-
 //Logout
 router.get("/logout", accountController.logout);
+
+
+
 
 //Test
 router.get("/", auth.requireAuth, (req, res) => {
     res.render("index");
 })
 router.get("/test", accountController.test)
-
-
-
 
 
 module.exports = router;

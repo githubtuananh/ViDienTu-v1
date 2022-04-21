@@ -1,7 +1,6 @@
 //Require models
 const userModel = require("../models/user.model");
 const blacklistUserModel = require("../models/blacklist.model");
-const lockUserUserModel = require("../models/lockUser.model");
 
 
 
@@ -122,8 +121,20 @@ exports.login = async (req, res) => {
         }catch(err){
             return res.status(400).json({code: 400, message: err});
         }
-
         const {username, password} = fields;
+
+
+
+        if(req.session.locked != undefined){
+            if(Date.now() - req.session.locked < 60*1000){
+                return res.status(400).json({code: 400, message: "Tài khoản hiện đang bị tạm khóa, vui lòng thử lại sau 1 phút’"});
+            }
+        }
+
+        const userBlackList = await blacklistUserModel.findOne({username});
+        if(userBlackList){
+            return res.status(400).json({code: 400, message: "Tài khoản đã bị khóa do nhập sai mật khẩu nhiều lần, vui lòng liên hệ quản trị viên để được hỗ trợ"});
+        }
         //Check User And Password
         try{
             const user = await userModel.findOne({username});
@@ -131,7 +142,22 @@ exports.login = async (req, res) => {
                 //Check Password
                 const passwordCorrect = user.password;
                 const result = bcrypt.compareSync(password, passwordCorrect);
-                if(!result) return res.status(400).json({code: 400, message: "Sai tài khoản hoặc mật khẩu"});
+                if(!result){
+                    // Prevent user from login
+                    const login_attempt = await helper.login_attempts(req, user);
+                    if(login_attempt){
+                        const user1 = await userModel.findOne({username});
+                        const black_list = await helper.addBackList(user1);
+                        if(black_list){
+                            return res.status(400).json({code: 400, message: "Nhấp sai quá nhiều lần, bị khóa tài khoản"});
+                        }
+                        req.session.locked = Date.now();
+                        return res.status(400).json({code: 400, message: "Nhập sai mật khẩu 3 lần liên tục, bị khóa 1 phút"});
+                    }
+                    // -------
+
+                    return res.status(400).json({code: 400, message: "Mật khẩu không chính xác"});
+                }
 
                 const data = {
                     email: user.email,
@@ -156,11 +182,15 @@ exports.login = async (req, res) => {
                 }
                 
                 // Login success
-                const token = jwt.sign({name: data.name, email: data.email, username}, process.env.TOKEN_SECERT, {expiresIn: '5m'});
+                delete req.session.locked;
+                delete req.session.login_attempts;
+                await userModel.findOneAndUpdate({username}, {unusual: 0});
+
+                const token = jwt.sign({name: data.name, email: data.email, username}, process.env.TOKEN_SECERT, {expiresIn: '10s'});
                 res.cookie('auth-token', token, {httpOnly: true}); 
                 return res.status(200).json({code: 200, firstLogin, message, data, token});
             }else{
-                return res.status(400).json({code: 400, message: "Sai tài khoản hoặc mật khẩu"});
+                return res.status(400).json({code: 400, message: "Tài khoản không tồn tại"});
             }
         }catch (err){
             return res.status(500).json({code: 500, message: "Lỗi truy xuất DB", error: err});
@@ -173,15 +203,12 @@ exports.changePassword = async (req, res) => {
 
 }
 
-
-
 //Logout 
 exports.logout = (req, res) => {
     res.clearCookie("auth-token");
     return res.status(200).json({code: 200, message: "Đã đăng xuất"});
 }
 
-    
 // ---------------------------------------------------------
 exports.test = async(req, res) => {
     const user = new blacklistUserModel({

@@ -46,8 +46,6 @@ app.use(
 
 app.use(logger('tiny'));
 
-
-
 //Handle Router
 app.use("/", indexRouter);
 
