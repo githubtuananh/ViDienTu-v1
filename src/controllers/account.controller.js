@@ -1,5 +1,9 @@
 //Require models
 const userModel = require("../models/user.model");
+const blacklistUserModel = require("../models/blacklist.model");
+const lockUserUserModel = require("../models/lockUser.model");
+
+
 
 //Require Other
 const formidable = require("formidable");
@@ -14,7 +18,6 @@ const middleware = require("../middleware/validator");
 
 //Require helper
 const helper = require("../helper/helper");
-const static = require("../helper/static");
 
 
 // ----------------------------------------------------------------------------
@@ -105,7 +108,7 @@ exports.register =  async (req, res) => {
     })
 }
 
-//Login first
+//Login
 exports.login = async (req, res) => {
     const form = formidable({ multiples: true });
     form.parse(req, async (err, fields, files) => {
@@ -140,17 +143,22 @@ exports.login = async (req, res) => {
                     cmnd: user.cmnd
                 };
 
+                let message = '';
+                let firstLogin = '';
                 if(user.firstLogin){
                     //update firstLogin
                     await userModel.findOneAndUpdate({username}, {firstLogin: false});
-                    
-                    const token = jwt.sign({_id: user._id, username}, process.env.TOKEN_SECERT, {expiresIn: '15m'});
-                     
-                    return res.status(200).json({code: 200, firstLogin: true, message: "Đăng nhập lần đầu cần đổi mật khẩu", data: data, token:token});
+                    message = "Đăng nhập lần đầu cần đổi mật khẩu";
+                    firstLogin = true;
+                }else{
+                    message = "Đăng nhập thành công";
+                    firstLogin = false;
                 }
-
-                const token = jwt.sign({_id: user._id, username}, process.env.TOKEN_SECERT, {expiresIn: '15m'});
-                return res.status(200).json({code: 200, firstLogin: false, message: "Đăng nhập thành công", data: data, token:token});
+                
+                // Login success
+                const token = jwt.sign({name: data.name, email: data.email, username}, process.env.TOKEN_SECERT, {expiresIn: '5m'});
+                res.cookie('auth-token', token, {httpOnly: true}); 
+                return res.status(200).json({code: 200, firstLogin, message, data, token});
             }else{
                 return res.status(400).json({code: 400, message: "Sai tài khoản hoặc mật khẩu"});
             }
@@ -165,10 +173,27 @@ exports.changePassword = async (req, res) => {
 
 }
 
+
+
+//Logout 
+exports.logout = (req, res) => {
+    res.clearCookie("auth-token");
+    return res.status(200).json({code: 200, message: "Đã đăng xuất"});
+}
+
     
 // ---------------------------------------------------------
 exports.test = async(req, res) => {
-    res.end("ok");
+    const user = new blacklistUserModel({
+        username: "tuan",
+    })           
+    const saveUser = await user.save();
+
+    const user1 = new lockUserUserModel({
+        username: "tuan",
+    })           
+    const saveUser1 = await user1.save();
+    res.end("end");
 }
 
 

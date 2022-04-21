@@ -6,10 +6,8 @@ const accountController = require("../controllers/account.controller");
 
 //Require middleware
 const validate = require('../middleware/validator');
+const auth = require('../middleware/auth');
 
-//Require Other
-// const multer = require('multer');
-// const upload = multer({dest: "./public/image/cmnd/"});
 
 // ------------------------------------------------------------------------
 //Register
@@ -25,13 +23,18 @@ router.get("/login", (req, res) => {
 });
 router.post("/login", accountController.login);
 
-//Verify
-router.get("/verify", (req, res) => {
-    res.redirect("/login");
-});
+
+//Logout
+router.get("/logout", accountController.logout);
 
 //Test
+router.get("/", auth.requireAuth, (req, res) => {
+    res.render("index");
+})
 router.get("/test", accountController.test)
+
+
+
 
 
 module.exports = router;

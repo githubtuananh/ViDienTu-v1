@@ -3,7 +3,7 @@ const fs = require("fs");
 require("dotenv").config();
 
 exports.generateRandomLetter = (n) => {
-    const listCharacter = "abcdefghijklmnopqrstuvwxyz0123456789`!@#$%^&*()?><|"
+    const listCharacter = "abcdefghijklmnopqrstuvwxyz0123456789`!@#$%^&*?><|"
     let randomString = '';
     for(let i=0; i<n; i++){
         randomString += listCharacter[Math.floor(Math.random() * listCharacter.length)];
@@ -36,7 +36,7 @@ exports.sendEmail = async(email, username, password) => {
         to: email, // list of receivers
         subject: "Đăng Ký Ví Điện Tử", // Subject line
         // text: "Chức mừng bạn đã đăng ký thành công",
-        html: `<h3>Chức mừng bạn đã đăng ký thành công</h3><p><a href="http://localhost:3000/verify">Verify</a></p><p>Tài khoản: ${username}</p><p>Mật khẩu: ${password}</p>`,
+        html: `<h3>Chức mừng bạn đã đăng ký thành công</h3><p>Tài khoản: ${username}</p><p>Mật khẩu: ${password}</p>`,
         // html:  fs.readFileSync(__dirname+`/404.html`),
 
     }

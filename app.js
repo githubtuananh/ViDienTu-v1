@@ -1,7 +1,8 @@
 const express = require("express");
 const path = require("path");
 const port = 3000;
-const session = require("express-session");
+const expressSession = require("express-session");
+const cookieParser = require("cookie-parser");
 const cors = require("cors");
 const logger = require("morgan");
 
@@ -31,19 +32,16 @@ app.use(express.static(path.join(__dirname, "public")));
 //Handle Form
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
+app.use(cookieParser(process.env.SIGN_COOKIE));
+// app.use(expressSession({secret: "secret"}));
 
 //Session Cookie
 app.use(
-    session({
-      secret: process.env.SESSION_SECRET,
-      resave: false,
-      saveUninitialized: false,
-      cookie: {
-        secure: false,
-        httpOnly: true,
-        maxAge: 1000 * 60 * 3,
-      },
-    })
+  expressSession({
+    secret: "secret",
+    resave: false,
+    saveUninitialized: false,
+  })
 );
 
 app.use(logger('tiny'));
