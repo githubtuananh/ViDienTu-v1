@@ -19,5 +19,7 @@ router.get("/login", (req, res) => {
 });
 router.post("/login", accountController.login);
 
+//Logout
+router.get("/logout", accountController.logout);
 
 module.exports = router;

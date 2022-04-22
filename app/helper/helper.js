@@ -25,7 +25,7 @@ exports.generateRandomNumber = (n) => {
     return randomString;
 }
 
-exports.sendEmail = async(email, username, password) => {
+exports.sendEmailRegister = async(email, username, password) => {
     let transporter = nodemailer.createTransport({
         host: "smtp.gmail.com",
         port: 587,
@@ -36,7 +36,7 @@ exports.sendEmail = async(email, username, password) => {
         },
     });
     const mailOptions = {
-        from: "Final Web", // sender address
+        from: "Delta E-Wallet", // sender address
         to: email, // list of receivers
         subject: "Đăng Ký Ví Điện Tử", // Subject line
         // text: "Chức mừng bạn đã đăng ký thành công",
@@ -69,6 +69,26 @@ exports.sendEmail = async(email, username, password) => {
     //     }
     //   });
 }
+
+exports.sendEmailResetPassword = async () => {
+    let transporter = nodemailer.createTransport({
+        host: "smtp.gmail.com",
+        port: 587,
+        secure: false,
+        auth: {
+          user: process.env.USER_EMAIL, 
+          pass: process.env.PASS_EMAIL,
+        },
+    });
+    const mailOptions = {
+        from: "Delta E-Wallet", 
+        to: email, 
+        subject: "Khôi phục mật khẩu", 
+        html: `OKOKOKOKOKOKOKOKOKOK`,
+    }
+    let info = await transporter.sendMail(mailOptions);
+}
+
 
 exports.login_attempts = async(req, user) => {
     if(req.session["login_attempts"] == undefined){
