@@ -10,20 +10,6 @@ const auth = require('../middleware/auth');
 
 
 // ------------------------------------------------------------------------
-//Register
-router.get("/register", (req, res) => {
-    const locals = { title: "Đăng ký" };
-    res.render("auth/register", locals);
-});
-router.post("/register", accountController.register)
-
-//Login 
-router.get("/login", (req, res) => {
-    const locals = { title: "Đăng nhậ123p" };
-    res.render("auth/login", locals);
-});
-router.post("/login", accountController.login);
-
 //Logout
 router.get("/logout", accountController.logout);
 
@@ -32,13 +18,12 @@ router.get("/changepassword", (req, res) => {
     const locals = { title: "Đổi mật khẩu" };
     res.render("auth/changePassword", locals);
 });
-router.post("/changePassword", auth.requireAuth, accountController.changePassword);
+router.post("/changePassword", accountController.changePassword);
 
-
-//Test
-router.get("/", auth.requireAuth, (req, res) => {
-    const locals = { title: "Đổi mật khẩu" };
-    res.render("index", locals);
+//home
+router.get("/", (req, res) => {
+    const locals = { title: "Trang chủ" };
+    res.render("home", locals);
 })
 router.get("/test", accountController.test)
 

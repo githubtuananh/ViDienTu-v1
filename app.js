@@ -5,16 +5,16 @@ const cookieParser = require("cookie-parser");
 const cors = require("cors");
 const logger = require("morgan");
 const expressLayouts = require("express-ejs-layouts");
+const mongoose = require("mongoose");
+const middleware = require("./app/middleware/auth");
 
 require("dotenv").config();
 
 const app = express();
-
-//MongooDb
-const mongoose = require("mongoose");
-
 //Require Router
-const indexRouter = require("./app/routes/index.router");
+const userRouter = require("./app/routes/user.router");
+const accountRouter = require("./app/routes/account.router");
+
 
 // ------------------------------------------------------------------------
 app.use(express.static(path.join(__dirname, "public")));
@@ -39,16 +39,17 @@ app.use(
 app.use(logger('tiny'));
 
 //Handle Router
-app.use("/", indexRouter);
+app.use("/", accountRouter);
+app.use("/", middleware.requireAuth, userRouter);
 
 //Handle Error
 app.use((req, res) => {
   res.render("404", {error: " 404 Error"});
 })
 
-app.use((error, req, res, next) => {
-  res.render("404", {error: " 500 Error"});
-})
+// app.use((error, req, res, next) => {
+//   res.render("404", {error: " 500 Error"});
+// })
 
 mongoose
   .connect(process.env.DB_URL, {

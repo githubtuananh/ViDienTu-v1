@@ -18,9 +18,6 @@ const middleware = require("../middleware/validator");
 //Require helper
 const helper = require("../helper/helper");
 
-//Require service
-const userService = require("../service/user.service");
-
 // ----------------------------------------------------------------------------
 //Register
 exports.register =  async (req, res) => {
@@ -116,29 +113,22 @@ exports.login = async (req, res) => {
         if (err) {
             return res.status(400).json({code: 400, message: err.message});
         }
-
-        //Check Fields
         try{
+            //Check Fields
             const result = await middleware.chemaLogin.validateAsync(fields);
-        }catch(err){
-            return res.status(400).json({code: 400, message: err});
-        }
-        const {username, password} = fields;
-
-        //Locked account 1m
-        if(req.session.locked != undefined){
-            if(Date.now() - req.session.locked < 60*1000){
-                return res.status(400).json({code: 400, message: "Tài khoản hiện đang bị tạm khóa, vui lòng thử lại sau 1 phút"});
+            const {username, password} = fields;
+            //Locked account 1m
+            if(req.session.locked != undefined && req.session.userlocked == username){
+                if(Date.now() - req.session.locked < 60*1000){
+                    return res.status(400).json({code: 400, message: "Tài khoản hiện đang bị tạm khóa, vui lòng thử lại sau 1 phút"});
+                }
             }
-        }
-        //Disable account
-        const userBlackList = await blacklistUserModel.findOne({username});
-        if(userBlackList){
-            return res.status(400).json({code: 400, message: "Tài khoản đã bị khóa do nhập sai mật khẩu nhiều lần, vui lòng liên hệ quản trị viên để được hỗ trợ"});
-        }
-
-        //Check User And Password
-        try{
+            //Disable account
+            const userBlackList = await blacklistUserModel.findOne({username});
+            if(userBlackList){
+                return res.status(400).json({code: 400, message: "Tài khoản đã bị khóa do nhập sai mật khẩu nhiều lần, vui lòng liên hệ quản trị viên để được hỗ trợ"});
+            }       
+            
             const user = await userModel.findOne({username});
             if(user){ //Check User Exists
                 //Check Password
@@ -154,23 +144,16 @@ exports.login = async (req, res) => {
                             return res.status(400).json({code: 400, message: "Nhấp sai quá nhiều lần, bị khóa tài khoản"});
                         }
                         req.session.locked = Date.now();
+                        req.session.userlocked = username;
                         return res.status(400).json({code: 400, message: "Nhập sai mật khẩu 3 lần liên tục, bị khóa 1 phút"});
                     }
                     // -------
-
                     return res.status(400).json({code: 400, message: "Mật khẩu không chính xác"});
                 }
-
                 const data = {
-                    email: user.email,
-                    name: user.name,
-                    username: username,
-                    birthday: user.birthday,
-                    address: user.address,
-                    phone: user.phone,
-                    cmnd: user.cmnd
+                    email: user.email, name: user.name, username: username, birthday: user.birthday,
+                    address: user.address, phone: user.phone, cmnd: user.cmnd
                 };
-
                 let message = '';
                 let firstLogin = '';
                 if(user.firstLogin){
@@ -182,21 +165,20 @@ exports.login = async (req, res) => {
                     message = "Đăng nhập thành công";
                     firstLogin = false;
                 }
-                
                 // Login success
                 delete req.session.locked;
                 delete req.session.login_attempts;
+                delete req.session.userlocked;
                 await userModel.findOneAndUpdate({username}, {unusual: 0});
-
                 const token = jwt.sign({name: data.name, email: data.email, username}, process.env.TOKEN_SECERT, {expiresIn: '10m'});
                 res.cookie('auth-token', token, {httpOnly: true}); 
                 return res.status(200).json({code: 200, firstLogin, message, data, token});
             }else{
                 return res.status(400).json({code: 400, message: "Tài khoản không tồn tại"});
             }
-        }catch (err){
-            return res.status(500).json({code: 500, message: "Lỗi truy xuất DB", error: err});
-        }       
+        }catch(err){
+            return res.status(400).json({code: 400, message: err});
+        }    
     })
 }
 
@@ -207,20 +189,15 @@ exports.changePassword = async (req, res) => {
         if (err) {
             return res.status(400).json({code: 400, message: err.message});
         }
-        //Check Fields
         try{
+            //Check fields
             const result = await middleware.chemaChangePassword.validateAsync(fields);
-        }catch(err){
-            return res.status(400).json({code: 400, message: err});
-        }
-
-        //Change Password
-        const {newPassword, confirmPassword, oldPassword} = fields;
-        const user = await userService.getUserById(req.user.username);
-        if(!user){
-            return res.status(400).json({code: 400, message: "Tài khoản không tồn tại"});
-        }
-        try {
+            //Change Password
+            const {newPassword, confirmPassword, oldPassword} = fields;
+            const user = await userModel.findOne({username: req.user.username});
+            if(!user){
+                return res.status(400).json({code: 400, message: "Tài khoản không tồn tại"});
+            }
             const passwordCorrect = user.password;
             const isPassword = bcrypt.compareSync(oldPassword, passwordCorrect);
             if(!isPassword){
@@ -230,9 +207,9 @@ exports.changePassword = async (req, res) => {
             await userModel.findOneAndUpdate({username: req.user.username}, {password: passwordHash});
 
             return res.status(200).json({code: 200, message: "Đổi mật khẩu thành công"});
-        } catch (error) {
-            return res.status(500).json({code: 500, message: "Đổi mật khẩu thất bại", error: err});
-        }        
+        }catch(err){
+            return res.status(400).json({code: 400, message: "Đổi mật khẩu thất bại", error: err});
+        }       
     })
 }
 
