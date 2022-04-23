@@ -8,14 +8,16 @@ const userController = require("../controllers/user.controller");
 const validate = require('../middleware/validator');
 const auth = require('../middleware/auth');
 
-
 // ------------------------------------------------------------------------
 //Change password
-router.get("/changepassword", (req, res) => {
+router.get("/change-password", (req, res) => {
     const locals = { title: "Đổi mật khẩu" };
     res.render("auth/changePassword", locals);
 });
-router.post("/changePassword", userController.changePassword);
+router.post("/change-Password", userController.changePassword);
+
+//Get Info User
+router.post("/get-info-user", userController.getInfoUser);
 
 //home
 router.get("/", (req, res) => {
@@ -23,6 +25,5 @@ router.get("/", (req, res) => {
     res.render("home", locals);
 })
 router.get("/test", userController.test)
-
 
 module.exports = router;

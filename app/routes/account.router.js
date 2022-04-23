@@ -22,4 +22,13 @@ router.post("/login", accountController.login);
 //Logout
 router.get("/logout", accountController.logout);
 
+//Reset password
+router.get("/forgot-password", (req, res) => {
+    const locals = { title: "Khôi phục mật khẩu" };
+    res.render("auth/forgotpassword", locals);
+})
+router.post("/forgot-password", accountController.forgotPassword);
+router.post("/reset-password/:token", accountController.resetPassword);
+
+
 module.exports = router;

@@ -70,7 +70,7 @@ exports.sendEmailRegister = async(email, username, password) => {
     //   });
 }
 
-exports.sendEmailResetPassword = async () => {
+exports.sendEmailResetPassword = async (email, token) => {
     let transporter = nodemailer.createTransport({
         host: "smtp.gmail.com",
         port: 587,
@@ -84,11 +84,10 @@ exports.sendEmailResetPassword = async () => {
         from: "Delta E-Wallet", 
         to: email, 
         subject: "Khôi phục mật khẩu", 
-        html: `OKOKOKOKOKOKOKOKOKOK`,
+        html: `Nhấn vào đây để khôi phục mật khẩu (Link chỉ tồn tại trong 10 phút) ==> <a href="http://localhost:3000/reset-password/${token}">Khôi phục mật khẩu</a> `,
     }
     let info = await transporter.sendMail(mailOptions);
 }
-
 
 exports.login_attempts = async(req, user) => {
     if(req.session["login_attempts"] == undefined){

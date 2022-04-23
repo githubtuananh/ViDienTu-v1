@@ -2,15 +2,12 @@
 const userModel = require("../models/user.model");
 const blacklistUserModel = require("../models/blacklist.model");
 
-
-
 //Require Other
 const formidable = require("formidable");
 const fs = require("fs");
 const nodemailer = require("nodemailer");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
-
 
 //Require middleware
 const middleware = require("../middleware/validator");
@@ -50,9 +47,25 @@ exports.changePassword = async (req, res) => {
     })
 }
 
-//Reset Password
+//Get Info User
+exports.getInfoUser = async (req, res) => {
+    const form = formidable({ multiples: true });
+    form.parse(req, async (err, fields, files) => {
+        if (err) {
+            return res.status(400).json({code: 400, message: err.message});
+        }
+        try {
+            const {username} = fields;
+            const user = await userModel.findOne({username});
+            const data = user;
+            return res.status(200).json({code: 200, message: "Lấy dữ liệu thành công", data});
+        } catch (error) {
+            return res.status(400).json({code: 400, message: "Lấy ", error: err});
+        }
+    })
+}
 
-
+//Get 
 // ---------------------------------------------------------
 exports.test = async(req, res) => {
     const user = new blacklistUserModel({
@@ -66,5 +79,7 @@ exports.test = async(req, res) => {
     const saveUser1 = await user1.save();
     res.end("end");
 }
+
+
 
 

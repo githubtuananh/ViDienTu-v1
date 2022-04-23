@@ -1,7 +1,7 @@
 //Require models
 const userModel = require("../models/user.model");
 const blacklistUserModel = require("../models/blacklist.model");
-
+const resetTokenModel = require("../models/resetToken.model");
 
 
 //Require Other
@@ -187,6 +187,71 @@ exports.logout = (req, res) => {
     res.clearCookie("auth-token");
     return res.status(200).json({code: 200, message: "Đã đăng xuất"});
 }
+
+//Reset Password
+exports.forgotPassword = async (req, res) => {
+    const form = formidable({ multiples: false });
+    form.parse(req, async (err, fields, files) => {
+        if (err) {
+            return res.status(400).json({code: 400, message: err.message});
+        }
+        try {
+            const {email} = fields;
+            const user = await userModel.findOne({email});
+            if(!user){
+                return res.status(400).json({code: 400, message: "Không tìm thấy email này !"});
+            }   
+            const token = jwt.sign({_id: user._id}, process.env.RESET_PASSWORD_KEY, {expiresIn: '10m'});
+            const userReset = await resetTokenModel.findOne({email});
+            
+
+            if(userReset){
+                await resetTokenModel.findOneAndUpdate({email}, {token, createdAt: Date.now()});
+            }else{
+                const resetToken = new resetTokenModel({
+                    email,token,
+                })   
+                await resetToken.save();
+            }
+
+            await helper.sendEmailResetPassword(email, token);
+            return res.status(200).json({code: 200, message: "Link khôi phục mật khẩu đã được gửi vào email"});
+        } catch (error) {
+            return res.status(400).json({code: 400, message: "Gửi link khôi phục thất bại", error});
+        }
+    })
+}
+exports.resetPassword = async (req, res, next) => {
+    const token = req.params.token;
+    if(!token) return res.status(400).json({code: 400, message: "Vui lòng cung cấp token"}); 
+    jwt.verify(token, process.env.RESET_PASSWORD_KEY, async(err, decoded)=>{
+        if (err) {
+            if(err.name == "TokenExpiredError") return res.status(400).json({code: 400, error: err.message});
+            else return res.status(400).json({code: 400, error: "Invaild Reset Token"});
+        }
+        const check = await resetTokenModel.findOne({token});
+        if(!check) return res.status(400).json({code: 400, message: "Link không còn tồn tại"}); 
+        
+        // Token Valid
+        const form = formidable({ multiples: false });
+        form.parse(req, async (err, fields, files) => {
+            if (err) {
+                return res.status(400).json({code: 400, message: err.message});
+            }
+            try {
+                await middleware.chemaResetPassword.validateAsync(fields);
+                const {newPass, confPass} = fields;
+                const passwordHash = bcrypt.hashSync(newPass, 2);
+                await userModel.findOneAndUpdate({email: check.email}, {password: passwordHash});
+                await resetTokenModel.deleteOne({email: check.email, token})
+                return res.status(200).json({code: 200, message: "Khôi phục mật khẩu thành công"});
+            } catch (error) {
+                return res.status(400).json({code: 400, message: error});
+            }
+        })
+    });
+}
+
 
 
 

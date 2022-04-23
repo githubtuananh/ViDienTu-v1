@@ -19,4 +19,10 @@ const chemaChangePassword = joi.object({
     confirmPassword: joi.string().valid(joi.ref('newPassword')).label('Nhập lại mật khẩu không chính xác'),
 })
 
-module.exports = {schemaRegister, chemaLogin, chemaChangePassword};
+
+const chemaResetPassword = joi.object({
+    newPass: joi.string().required().label('Vui lòng điền đầy đủ'),
+    confPass: joi.string().valid(joi.ref('newPass')).label('Nhập lại mật khẩu không chính xác'),
+})
+
+module.exports = {schemaRegister, chemaLogin, chemaChangePassword, chemaResetPassword};
