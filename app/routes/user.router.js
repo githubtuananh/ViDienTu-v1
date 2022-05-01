@@ -19,6 +19,9 @@ router.post("/change-Password", userController.changePassword);
 //Get Info User
 router.post("/get-info-user", userController.getInfoUser);
 
+//Update CMND
+router.post("/update-cmnd", userController.updateCMND);
+
 //home
 router.get("/", (req, res) => {
     const locals = { title: "Trang chủ" };

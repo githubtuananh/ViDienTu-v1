@@ -10,8 +10,6 @@ exports.requireAuth = (req, res, next) => {
             else return res.status(400).json({code: 400, error: "Invaild Token"});
         }
         req.user = decoded;
-
-       
         next();
     });
 }

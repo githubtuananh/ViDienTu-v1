@@ -65,19 +65,61 @@ exports.getInfoUser = async (req, res) => {
     })
 }
 
+//Update CMND
+exports.updateCMND = async (req, res) => {
+    const form = formidable({ multiples: true });
+    form.parse(req, async (err, fields, files) => {
+        if (err) {
+            return res.status(400).json({code: 400, message: err.message});
+        }
+        const  front_cmnd = files.front_cmnd;
+        const  back_cmnd = files.back_cmnd;
+
+        if(front_cmnd == undefined || back_cmnd == undefined){
+            return  res.status(400).json({code: 400, message: "Vui lòng chọn ảnh CMND"});
+        }else{
+            const  extFront_cmnd = front_cmnd.mimetype;
+            const  extBack_cmnd = back_cmnd.mimetype;
+            if((extFront_cmnd == "image/jpeg" || extFront_cmnd == "image/png") && (extBack_cmnd == "image/jpeg" || extBack_cmnd == "image/png")){
+                const cmnd = [front_cmnd.newFilename, back_cmnd.newFilename];
+                const pathUploadCmnd = "./public/image/cmnd/";
+                const dest =  pathUploadCmnd + front_cmnd.newFilename;
+                const dest1 =  pathUploadCmnd + back_cmnd.newFilename;
+                //Upload CMND
+                try{
+                    fs.copyFileSync(front_cmnd.filepath, dest);
+                    fs.copyFileSync(back_cmnd.filepath, dest1);
+                }catch(err){
+                    return res.status(500).json({code: 500, message: "Lỗi upload file", error: err});
+                }
+                //Update in DB
+                try{
+                    const user = await userModel.findOne({username: req.user.username});
+                    const destOld = pathUploadCmnd + user.cmnd[0];
+                    const destOld1 = pathUploadCmnd + user.cmnd[1];
+                    console.log(destOld);
+                    fs.unlinkSync(destOld);  //Remove cmnd old
+                    fs.unlinkSync(destOld1); //Remove cmnd old
+
+                    await userModel.findOneAndUpdate({username: req.user.username}, {cmnd});
+                    return res.status(200).json({code: 200, message: "Cập nhật thành công"});
+                }catch (err){
+                    fs.unlinkSync(dest);    //Remove File CMND If Add User Failed 
+                    fs.unlinkSync(dest1);   //Remove File CMND If Add User Failed
+
+                    return res.status(500).json({code: 500, message: "Cập nhật CMND thất bại", error: err});
+                }           
+            }else{
+                return  res.status(400).json({code: 400, message: "File ảnh không hợp lệ !"});
+            }
+        }
+    })
+}
+
 //Get 
 // ---------------------------------------------------------
 exports.test = async(req, res) => {
-    const user = new blacklistUserModel({
-        username: "tuan",
-    })           
-    const saveUser = await user.save();
-
-    const user1 = new lockUserUserModel({
-        username: "tuan",
-    })           
-    const saveUser1 = await user1.save();
-    res.end("end");
+    res.end("test");
 }
 
 
